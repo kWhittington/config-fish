@@ -1,0 +1,1 @@
+/Users/kwhittin/.config/fisherman/ssh-agent/init.fish
