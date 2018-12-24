@@ -1,0 +1,1 @@
+/Users/kwhittin/.config/fisherman/nvm/completions/nvm.fish
