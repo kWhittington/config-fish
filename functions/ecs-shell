@@ -1,0 +1,25 @@
+#!/bin/bash
+
+SERVICE=$1
+CLUSTER=$SERVICE-ecs
+USERNAME=$(echo $SERVICE | cut -d'-' -f2)
+
+if [ -z "$SERVICE" ]; then
+  echo "Usage:"
+  echo "ecs-shell service-name i.e. qa-alertbus-web"
+  exit 1
+fi
+
+EC2_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$CLUSTER" "Name=instance-state-name,Values=running" --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text)
+COMMAND='bundle exec rails c'
+
+echo "Connecting to $SERVICE@$EC2_IP"
+if [[ $USERNAME == "alertbus" ]]; then
+  COMMAND="bash -c 'source alertbus-envs.sh && ${COMMAND}'"
+  ssh $EC2_IP -t 'docker exec -it -u '$USERNAME' "$( docker ps -a -q -f name=ecs-'$SERVICE' | head -n 1 )" '$COMMAND''
+elif [[ $USERNAME == "console" ]]; then
+  COMMAND="bash -c 'source console-*-envs.sh && ${COMMAND}'"
+  ssh $EC2_IP -t 'docker exec -it -u '$USERNAME' "$( docker ps -a -q -f name=ecs-'$SERVICE' | head -n 1 )" '$COMMAND''
+elif [[ $USERNAME == "sftp" ]]; then
+  ssh $EC2_IP -t 'bash -c "docker exec -it -u 'transfer' $( docker ps -a -q -f name=ecs-'$SERVICE' | head -n 1 ) bash"'
+fi
